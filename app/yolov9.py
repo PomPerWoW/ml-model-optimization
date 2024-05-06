@@ -2,7 +2,7 @@ import pyrootutils
 
 ROOT = pyrootutils.setup_root(
     search_from=__file__,
-    indicator=["env.yaml"],
+    indicator=["requirements.txt"],
     pythonpath=True,
     dotenv=True,
 )

@@ -30,6 +30,13 @@ def yolo_run_image(args):
     print("[INFO] Inference Image")
     timer.start()
     results = model(image)
+    for result in results:
+        for box in result.boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            confidence = box.conf[0]
+            class_id = int(box.cls[0])
+            class_name = model.names[class_id]
+            print(f"Class: {class_name}, Confidence: {confidence:.2f}, Box: [{x1}, {y1}, {x2}, {y2}]")
     timer.stop()
 
     elapsed_time = timer.result()
@@ -131,6 +138,11 @@ def inference_on_image(args):
     timer.start()
     print("[INFO] Inference Image")
     detections = detector.detect(image)
+    for detection in detections:
+        box = detection["box"]  # [x1, y1, x2, y2]
+        class_name = detection["class_name"]
+        confidence = detection["confidence"]
+        print(f"Detected {class_name} with confidence {confidence:.2f}: {box}")
     # detector.draw_detections(image, detections=detections)
     timer.stop()
     elapsed_time = timer.result()
