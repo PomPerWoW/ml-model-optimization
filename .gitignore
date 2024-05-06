@@ -5,3 +5,5 @@ tmp
 *.onnx
 *.yaml
 *.mp4
+*.jpg
+*.jpeg

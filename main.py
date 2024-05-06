@@ -20,6 +20,7 @@ def yolo_run_image(args):
     """
     timer = Timer()
 
+    print(args.device)
     print("[INFO] Initialize Model")
     model = YOLO(args.weights)
 
