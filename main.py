@@ -5,24 +5,23 @@ from app.yolov9 import YOLOv9
 from ultralytics import YOLO
 from timer import Timer
 
-# Del later
-from app.util.util import DotDict
-
 def yolo_run_image(args):
     """
-    Runs YOLO model on a single image.
+    Run YOLO model on a single image and return bounding box detections.
 
     Args:
-        args: Arguments containing image path and display options.
+        args: Arguments containing image path, model weights, device type, and display options.
 
     Returns:
+        list: 2D array with detected class, confidence, and bounding box coordinates.
         float: Elapsed time for inference.
     """
     timer = Timer()
+    conf_bb = []
 
     print(args.device)
     print("[INFO] Initialize Model")
-    model = YOLO(args.weights)
+    model = YOLO(args.weights, task="detect")
 
     source_path = args.source
     assert os.path.isfile(source_path), f"Source file {source_path} does not exist."
@@ -30,16 +29,18 @@ def yolo_run_image(args):
 
     print("[INFO] Inference Image")
     timer.start()
-    results = model(image)
+    results = model(image, device=args.device)
+    
     for result in results:
         for box in result.boxes:
             x1, y1, x2, y2 = map(int, box.xyxy[0])
             confidence = box.conf[0]
             class_id = int(box.cls[0])
             class_name = model.names[class_id]
+            conf_bb.append([class_name, float(confidence), x1, y1, x2, y2])
             print(f"Class: {class_name}, Confidence: {confidence:.2f}, Box: [{x1}, {y1}, {x2}, {y2}]")
-    timer.stop()
 
+    timer.stop()
     elapsed_time = timer.result()
     print(f"Elapsed time: {elapsed_time:0.4f} seconds")
 
@@ -48,7 +49,7 @@ def yolo_run_image(args):
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    return elapsed_time
+    return conf_bb, elapsed_time
 
 def yolo_run_video(args):
     """
@@ -123,27 +124,34 @@ def get_detector(args):
 
 def inference_on_image(args):
     """
-    Runs ONNX model on a single image.
+    Run ONNX model inference on a single image and return detected bounding boxes.
 
     Args:
-        args: Arguments containing image path and display options.
+        args: Contains path to source image, model configuration, and display options.
 
     Returns:
+        list: 2D array with detected class, confidence, and bounding box coordinates.
         float: Elapsed time for inference.
     """
+    timer = Timer()
+    conf_bb = []
+    
     print("[INFO] Intialize Model")
     detector = get_detector(args)
     image = cv2.imread(args.source)
-
-    timer = Timer()
+    
     timer.start()
     print("[INFO] Inference Image")
     detections = detector.detect(image)
+    
     for detection in detections:
-        box = detection["box"]  # [x1, y1, x2, y2]
+        box = detection["box"]
+        x1, y1, x2, y2 = box
         class_name = detection["class_name"]
         confidence = detection["confidence"]
-        print(f"Detected {class_name} with confidence {confidence:.2f}: {box}")
+        conf_bb.append([class_name, float(confidence), x1, y1, x2, y2])
+        print(f"Class: {class_name}, Confidence: {confidence:.2f}, Box: [{x1}, {y1}, {x2}, {y2}]")
+
     # detector.draw_detections(image, detections=detections)
     timer.stop()
     elapsed_time = timer.result()
@@ -156,7 +164,7 @@ def inference_on_image(args):
         cv2.imshow("Result", image)
         cv2.waitKey(0)
     
-    return elapsed_time
+    return conf_bb, elapsed_time
 
 def inference_on_video(args):
     """

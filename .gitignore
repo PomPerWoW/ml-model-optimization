@@ -7,3 +7,5 @@ tmp
 *.mp4
 *.jpg
 *.jpeg
+*.lock
+*.toml
