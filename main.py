@@ -1,10 +1,11 @@
 import os
 import cv2
+import torch
 from pathlib import Path
 from app.yolov9 import YOLOv9
 from ultralytics import YOLO
 from timer import Timer
-
+    
 def yolo_run_image(args):
     """
     Run YOLO model on a single image and return bounding box detections.
@@ -19,9 +20,8 @@ def yolo_run_image(args):
     timer = Timer()
     conf_bb = []
 
-    print(args.device)
     print("[INFO] Initialize Model")
-    model = YOLO(args.weights, task="detect")
+    model = YOLO(args.weights, task="detect", verbose=True)
 
     source_path = args.source
     assert os.path.isfile(source_path), f"Source file {source_path} does not exist."
@@ -29,7 +29,7 @@ def yolo_run_image(args):
 
     print("[INFO] Inference Image")
     timer.start()
-    results = model(image, device=args.device)
+    results = model(image)
     
     for result in results:
         for box in result.boxes:
