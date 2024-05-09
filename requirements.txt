@@ -1,12 +1,12 @@
 numpy==1.26.4
-onnxruntime==1.17.3
 pyrootutils==1.0.4
 PyYAML==6.0.1
 PyYAML==6.0.1
 ultralytics==8.2.9
+jupyter
 opencv-python
 pandas
-onnxruntime
+onnxruntime-gpu
 ultralytics
 PyYAML
 pyrootutils

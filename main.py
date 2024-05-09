@@ -1,6 +1,5 @@
 import os
 import cv2
-import torch
 from pathlib import Path
 from app.yolov9 import YOLOv9
 from ultralytics import YOLO
@@ -21,7 +20,8 @@ def yolo_run_image(args):
     conf_bb = []
 
     print("[INFO] Initialize Model")
-    model = YOLO(args.weights, task="detect", verbose=True)
+    model = YOLO(args.weights, task="detect")
+    # model.to(args.device)
 
     source_path = args.source
     assert os.path.isfile(source_path), f"Source file {source_path} does not exist."
@@ -29,7 +29,9 @@ def yolo_run_image(args):
 
     print("[INFO] Inference Image")
     timer.start()
-    results = model(image)
+    # results = model(image)
+    results = model.predict(source=image, device=args.device)
+    
     
     for result in results:
         for box in result.boxes:
