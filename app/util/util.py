@@ -1,42 +1,25 @@
 import numpy as np
-from collections import defaultdict
-import itertools
-
-class DotDict(dict):
-    def __getattr__(self, key):
-        if key in self:
-            return self[key]
-        raise AttributeError(f"'DotDict' object has no attribute '{key}'")
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __delattr__(self, key):
-        if key in self:
-            del self[key]
-        else:
-            raise AttributeError(f"'DotDict' object has no attribute '{key}'")
-
-def parse_raw_array(raw_array):
-    parsed_objects = []
-    for row in raw_array:
-        class_name = row[0]
-        confidence = float(row[1])
-        box = list(map(float, row[2:6]))
-        parsed_objects.append({
-            'class': class_name,
-            'confidence': confidence,
-            'box': box
-        })
-    return parsed_objects
 
 class Differ:
     def __init__(self, r1_raw, r2_raw):
         if not isinstance(r1_raw, np.ndarray) or not isinstance(r2_raw, np.ndarray):
             raise TypeError("Inputs must be numpy arrays")
         
-        self.r1 = parse_raw_array(r1_raw)
-        self.r2 = parse_raw_array(r2_raw)
+        self.r1 = self._parse_raw_array(r1_raw)
+        self.r2 = self._parse_raw_array(r2_raw)
+
+    def _parse_raw_array(self, raw_array):
+        parsed_objects = []
+        for row in raw_array:
+            class_name = row[0]
+            confidence = float(row[1])
+            box = list(map(float, row[2:6]))
+            parsed_objects.append({
+                'class': class_name,
+                'confidence': confidence,
+                'box': box
+            })
+        return parsed_objects
 
     def _find_closest_match(self, obj, obj_list):
         min_distance = float('inf')
@@ -69,6 +52,6 @@ class Differ:
                 conf_diff = abs(obj1['confidence'] - closest_match['confidence'])
                 box_diff = np.abs(np.array(obj1['box']) - np.array(closest_match['box']))
                 
-                differences.append([obj1['class'], conf_diff, list(box_diff)])
+                differences.append([obj1['class'], f"{conf_diff:.4f}", list(box_diff)])
         
         return differences

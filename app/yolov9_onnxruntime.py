@@ -1,4 +1,5 @@
 import pyrootutils
+from app.util.timer import Timer
 
 ROOT = pyrootutils.setup_root(
     search_from=__file__,
@@ -14,13 +15,13 @@ import onnxruntime
 import numpy as np
 from typing import Tuple, List
 
-class YOLOv9:
+class YoloV9Onnxruntime:
     def __init__(self,
                  model_path: str,
                  class_mapping_path: str,
                  original_size: Tuple[int, int] = (1280, 720),
                  score_threshold: float = 0.1,
-                 conf_thresold: float = 0.4,
+                 conf_threshold: float = 0.4,
                  iou_threshold: float = 0.4,
                  device: str = "CPU") -> None:
         self.model_path = model_path
@@ -28,9 +29,10 @@ class YOLOv9:
 
         self.device = device
         self.score_threshold = score_threshold
-        self.conf_thresold = conf_thresold
+        self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.image_width, self.image_height = original_size
+        self.timer = Timer()
         self.create_session()
 
     def create_session(self) -> None:
@@ -38,8 +40,9 @@ class YOLOv9:
         opt_session.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
         providers = ['CPUExecutionProvider']
         if self.device.casefold() != "cpu":
-            providers.append("CUDAExecutionProvider")
-        session = onnxruntime.InferenceSession(self.model_path, providers=providers)
+            providers = ['CUDAExecutionProvider']
+        sess_options = onnxruntime.SessionOptions()
+        session = onnxruntime.InferenceSession(self.model_path, sess_options=sess_options, providers=providers)
         self.session = session
         self.model_inputs = self.session.get_inputs()
         self.input_names = [self.model_inputs[i].name for i in range(len(self.model_inputs))]
@@ -76,8 +79,8 @@ class YOLOv9:
     def postprocess(self, outputs):
         predictions = np.squeeze(outputs).T
         scores = np.max(predictions[:, 4:], axis=1)
-        predictions = predictions[scores > self.conf_thresold, :]
-        scores = scores[scores > self.conf_thresold]
+        predictions = predictions[scores > self.conf_threshold, :]
+        scores = scores[scores > self.conf_threshold]
         class_ids = np.argmax(predictions[:, 4:], axis=1)
 
         # Rescale box
@@ -103,6 +106,7 @@ class YOLOv9:
         
     def detect(self, img: np.ndarray) -> List:
         input_tensor = self.preprocess(img)
+        print(self.session.get_providers())
         outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})[0]
         return self.postprocess(outputs)
     

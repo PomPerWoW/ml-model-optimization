@@ -1,11 +1,25 @@
+# Ignore macOS specific .DS_Store files
 .DS_Store
+
+# Ignore Python bytecode cache directories
 **__pycache__**
+
+# Ignore temporary files or directories
 tmp
+
+# Ignore PyTorch model files
 *.pt
+
+# Ignore ONNX model files
 *.onnx
-*.yaml
-*.mp4
+
+# Ignore yolov9c_openvino_model directory
+yolov9c_openvino_model/
+
+# Ignore JPEG image files and video files
 *.jpg
 *.jpeg
+*.mp4
+
+# Ignore lock files
 *.lock
-*.toml
