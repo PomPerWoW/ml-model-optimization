@@ -20,15 +20,13 @@ class YoloV9Onnxruntime:
                  model_path: str,
                  class_mapping_path: str,
                  original_size: Tuple[int, int] = (1280, 720),
-                 score_threshold: float = 0.1,
-                 conf_threshold: float = 0.4,
-                 iou_threshold: float = 0.4,
+                 conf_threshold: float = 0.25,
+                 iou_threshold: float = 0.45,
                  device: str = "CPU") -> None:
         self.model_path = model_path
         self.class_mapping_path = class_mapping_path
 
         self.device = device
-        self.score_threshold = score_threshold
         self.conf_threshold = conf_threshold
         self.iou_threshold = iou_threshold
         self.image_width, self.image_height = original_size
@@ -90,7 +88,7 @@ class YoloV9Onnxruntime:
         boxes = np.divide(boxes, input_shape, dtype=np.float32)
         boxes *= np.array([self.image_width, self.image_height, self.image_width, self.image_height])
         boxes = boxes.astype(np.int32)
-        indices = cv2.dnn.NMSBoxes(boxes, scores, score_threshold=self.score_threshold, nms_threshold=self.iou_threshold)
+        indices = cv2.dnn.NMSBoxes(boxes, scores, self.conf_threshold, self.iou_threshold)
         detections = []
         for bbox, score, label in zip(self.xywh2xyxy(boxes[indices]), scores[indices], class_ids[indices]):
             detections.append({

@@ -43,7 +43,6 @@ class YoloRuntimeTest:
         detector = YoloV9Onnxruntime(model_path=weights_path,
                           class_mapping_path=classes_path,
                           original_size=(w, h),
-                          score_threshold=args["score_threshold"],
                           conf_threshold=args["conf_threshold"],
                           iou_threshold=args["iou_threshold"],
                           device=args["device"])
@@ -65,14 +64,16 @@ class YoloRuntimeTest:
             detections = detector.predict(source=args["source"], device=args["device"], imgsz=640, conf=args["conf_threshold"], iou=args["iou_threshold"])
 
         timer.stop()
+        elapsed_time = timer.result()
+        print(f"Elapsed time: {elapsed_time:0.4f} seconds")
         
-        try:
-            detection = detections[0]
-            elapsed_time = float(detection.speed["inference"]) / 1000
-        except:
-            elapsed_time = timer.result()
-        finally:
-            print(f"Elapsed time: {elapsed_time:0.4f} seconds")
+        # try:
+        #     detection = detections[0]
+        #     elapsed_time = float(detection.speed["inference"]) / 1000
+        # except:
+        #     elapsed_time = timer.result()
+        # finally:
+        #     print(f"Elapsed time: {elapsed_time:0.4f} seconds")
         
         if hasattr(detector, 'detect'):
             for detection in detections:
@@ -94,7 +95,7 @@ class YoloRuntimeTest:
         if args["show"]:
             output_path = f"./app/output/image_output.jpg"
             cv2.imwrite(output_path, args["source"])
-            YoloRuntimeTest._display_result_window(args["source"], ["args.show"])
+            YoloRuntimeTest._display_result_window(args["source"], args["show"])
 
         return conf_bb, elapsed_time
 
