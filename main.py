@@ -1,7 +1,7 @@
 import os
 import cv2
 from pathlib import Path
-from ultralytics import YOLO
+from app.yolov9_ultralytics.models.yolo import YOLOv9
 from app.yolov9_onnxruntime import YoloV9Onnxruntime
 from app.yolov9_openvino import YoloV9Openvino
 from app.util.timer import Timer
@@ -13,7 +13,7 @@ class YoloRuntimeTest:
     @staticmethod
     def _initialize_model(args):
         print("[INFO] Initialize Model")
-        model = YOLO(args["weights"], task="detect")
+        model = YOLOv9(args["weights"], task="detect")
         return model
 
     @staticmethod
@@ -53,6 +53,7 @@ class YoloRuntimeTest:
     def _inference_on_image(detector, args):
         timer = Timer()
         conf_bb = []
+        elapsed_time = 0
 
         print("[INFO] Inference Image")
         timer.start()
@@ -64,6 +65,14 @@ class YoloRuntimeTest:
             detections = detector.predict(source=args["source"], device=args["device"], imgsz=640, conf=args["conf_threshold"], iou=args["iou_threshold"])
 
         timer.stop()
+        
+        try:
+            detection = detections[0]
+            elapsed_time = float(detection.speed["inference"]) / 1000
+        except:
+            elapsed_time = timer.result()
+        finally:
+            print(f"Elapsed time: {elapsed_time:0.4f} seconds")
         
         if hasattr(detector, 'detect'):
             for detection in detections:
@@ -81,9 +90,6 @@ class YoloRuntimeTest:
                     class_name = detector.names[class_id]
                     conf_bb.append([class_name, float(confidence), x1, y1, x2, y2])
                     print(f"Class: {class_name}, Confidence: {confidence:.2f}, Box: [{x1}, {y1}, {x2}, {y2}]")
-        
-        elapsed_time = timer.result()
-        print(f"Elapsed time: {elapsed_time:0.4f} seconds")
 
         if args["show"]:
             output_path = f"./app/output/image_output.jpg"
@@ -137,10 +143,10 @@ class YoloRuntimeTest:
 
     @staticmethod
     def export_onnx():
-        model = YOLO('./app/weights/yolov9c.pt')
-        model.export(format='onnx', simplify=True)
+        model = YOLOv9('./app/weights/yolov9c.pt')
+        model.export(format='onnx')
 
     @staticmethod
-    def export_openVino():
-        model = YOLO('./app/weights/yolov9c.pt')
+    def export_openvino():
+        model = YOLOv9('./app/weights/yolov9c.pt')
         model.export(format='openvino')

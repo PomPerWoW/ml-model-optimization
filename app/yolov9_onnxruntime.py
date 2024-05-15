@@ -106,7 +106,6 @@ class YoloV9Onnxruntime:
         
     def detect(self, img: np.ndarray) -> List:
         input_tensor = self.preprocess(img)
-        print(self.session.get_providers())
         outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})[0]
         return self.postprocess(outputs)
     
