@@ -16,10 +16,5 @@ tmp
 # Ignore yolov9c_openvino_model directory
 yolov9c_openvino_model/
 
-# Ignore JPEG image files and video files
-*.jpg
-*.jpeg
-*.mp4
-
 # Ignore lock files
 *.lock

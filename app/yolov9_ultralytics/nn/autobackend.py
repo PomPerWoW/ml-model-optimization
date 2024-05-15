@@ -451,11 +451,11 @@ class AutoBackend(nn.Module):
 
         # PyTorch
         if self.pt or self.nn_module:
-            self.timer = Timer()
-            self.timer.start()
+            timer = Timer()
+            timer.start()
             y = self.model(im, augment=augment, visualize=visualize, embed=embed)
-            self.timer.stop()
-            print(f"infer time: {self.timer.elapsed_time} s")
+            timer.stop()
+            print(f"infer time: {timer.elapsed_time} s")
 
         # TorchScript
         elif self.jit:
@@ -470,7 +470,11 @@ class AutoBackend(nn.Module):
         # ONNX Runtime
         elif self.onnx:
             im = im.cpu().numpy()  # torch to numpy
+            timer = Timer()
+            timer.start()
             y = self.session.run(self.output_names, {self.session.get_inputs()[0].name: im})
+            timer.stop()
+            print(f"infer time: {timer.elapsed_time} s")
 
         # OpenVINO
         elif self.xml:
