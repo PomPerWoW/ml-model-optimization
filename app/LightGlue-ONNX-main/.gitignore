@@ -1,0 +1,15 @@
+*.egg-info
+*.pyc
+/.idea/
+/data/
+/outputs/
+__pycache__
+/lightglue/weights/
+lightglue/_flash/
+*-checkpoint.ipynb
+*.pth
+*.onnx
+*.engine
+*.profile
+.vscode
+megadepth_test_1500
