@@ -22,8 +22,8 @@ coconame = [
     "chair",          "couch",      "potted plant",  "bed",           "dining table", "toilet",        "tv",
     "laptop",         "mouse",      "remote",        "keyboard",      "cell phone",   "microwave",     "oven",
     "toaster",        "sink",       "refrigerator",  "book",          "clock",        "vase",          "scissors",
-    "teddy bear",     "hair drier", "toothbrush" ]
-
+    "teddy bear",     "hair drier", "toothbrush" 
+]
 
 class YoloV9Openvino:
     def __init__(self, xml_model_path="./model/yolov9-c-converted.xml", conf=0.2, nms=0.4):
