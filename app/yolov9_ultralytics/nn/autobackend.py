@@ -19,6 +19,7 @@ from app.yolov9_ultralytics.utils.checks import check_requirements, check_suffix
 from app.yolov9_ultralytics.utils.downloads import attempt_download_asset, is_url
 
 from app.util.timer import Timer
+import pdb
 
 def check_class_names(names):
     """
@@ -430,7 +431,7 @@ class AutoBackend(nn.Module):
 
         self.__dict__.update(locals())  # assign all variables to self
 
-    def forward(self, im, augment=False, visualize=False, embed=None):
+    def forward(self, im, augment=False, visualize=False, embed=None, warmup=False):
         """
         Runs inference on the YOLOv8 MultiBackend model.
 
@@ -451,7 +452,12 @@ class AutoBackend(nn.Module):
 
         # PyTorch
         if self.pt or self.nn_module:
+            timer = Timer()
+            timer.start()
             y = self.model(im, augment=augment, visualize=visualize, embed=embed)
+            timer.stop()
+            if (not warmup):
+                print(f'session run: {timer.elapsed_time}')
 
         # TorchScript
         elif self.jit:
@@ -466,7 +472,12 @@ class AutoBackend(nn.Module):
         # ONNX Runtime
         elif self.onnx:
             im = im.cpu().numpy()  # torch to numpy
+            timer = Timer()
+            timer.start()
             y = self.session.run(self.output_names, {self.session.get_inputs()[0].name: im})
+            timer.stop()
+            if (not warmup):
+                print(f'session run: {timer.elapsed_time}')
 
         # OpenVINO
         elif self.xml:
@@ -625,7 +636,7 @@ class AutoBackend(nn.Module):
         if any(warmup_types) and (self.device.type != "cpu" or self.triton):
             im = torch.empty(*imgsz, dtype=torch.half if self.fp16 else torch.float, device=self.device)  # input
             for _ in range(2 if self.jit else 1):
-                self.forward(im)  # warmup
+                self.forward(im, warmup=True)  # warmup
 
     @staticmethod
     def _model_type(p="path/to/model.pt"):

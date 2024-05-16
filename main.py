@@ -5,26 +5,30 @@ from app.yolov9_ultralytics.models.yolo import YOLOv9
 from app.yolov9_onnxruntime import YoloV9Onnxruntime
 from app.yolov9_openvino import YoloV9Openvino
 from app.util.timer import Timer
+import pdb
 
 class YoloRuntimeTest:
     def __init__(self):
         pass
 
     @staticmethod
-    def _initialize_model(args):
+    def _initialize_ultralytics_model(args):
+        """Initialize the YOLOv9 model with the given weights and task."""
         print("[INFO] Initialize Model")
         model = YOLOv9(args["weights"], task="detect")
         return model
 
     @staticmethod
     def _display_result_window(image, show):
+        """Display the image in a window if the 'show' flag is True."""
         if show:
             cv2.imshow("Result", image)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
     @staticmethod
-    def _get_detector(args):
+    def _initialize_onnxruntime_model(args):
+        """Initialize the ONNX Runtime detector with the given arguments."""
         print("[INFO] Initialize Model")
         weights_path = args["weights"]
         classes_path = args["classes"]
@@ -41,15 +45,16 @@ class YoloRuntimeTest:
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         detector = YoloV9Onnxruntime(model_path=weights_path,
-                          class_mapping_path=classes_path,
-                          original_size=(w, h),
-                          conf_threshold=args["conf_threshold"],
-                          iou_threshold=args["iou_threshold"],
-                          device=args["device"])
+                                     class_mapping_path=classes_path,
+                                     original_size=(w, h),
+                                     conf_threshold=args["conf_threshold"],
+                                     iou_threshold=args["iou_threshold"],
+                                     device=args["device"])
         return detector
 
     @staticmethod
     def _inference_on_image(detector, args):
+        """Perform inference on a single image and return the detected objects and elapsed time."""
         timer = Timer()
         conf_bb = []
         elapsed_time = 0
@@ -66,14 +71,6 @@ class YoloRuntimeTest:
         timer.stop()
         elapsed_time = timer.result()
         print(f"Elapsed time: {elapsed_time:0.4f} seconds")
-        
-        # try:
-        #     detection = detections[0]
-        #     elapsed_time = float(detection.speed["inference"]) / 1000
-        # except:
-        #     elapsed_time = timer.result()
-        # finally:
-        #     print(f"Elapsed time: {elapsed_time:0.4f} seconds")
         
         if hasattr(detector, 'detect'):
             for detection in detections:
@@ -101,6 +98,7 @@ class YoloRuntimeTest:
 
     @staticmethod
     def _inference_on_video(detector, args):
+        """Perform inference on a video file and return the elapsed time."""
         timer = Timer()
 
         print("[INFO] Inference on Video")
@@ -127,27 +125,38 @@ class YoloRuntimeTest:
         return elapsed_time
 
     def ultralytics_run_image(self, args):
-        model = self._initialize_model(args)
+        """Run inference on an image using the Ultralytics YOLO model."""
+        model = self._initialize_ultralytics_model(args)
         return self._inference_on_image(model, args)
 
     def ultralytics_run_video(self, args):
-        model = self._initialize_model(args)
+        """Run inference on a video using the Ultralytics YOLO model."""
+        model = self._initialize_ultralytics_model(args)
         return self._inference_on_video(model, args)
 
     def onnxruntime_run_image(self, args):
-        detector = self._get_detector(args)
+        """Run inference on an image using the ONNX Runtime model."""
+        detector = self._initialize_onnxruntime_model(args)
         return self._inference_on_image(detector, args)
 
     def onnxruntime_run_video(self, args):
-        detector = self._get_detector(args)
+        """Run inference on a video using the ONNX Runtime model."""
+        detector = self._initialize_onnxruntime_model(args)
         return self._inference_on_video(detector, args)
 
     @staticmethod
     def export_onnx():
+        """Export the YOLOv9 model to ONNX format."""
         model = YOLOv9('./app/weights/yolov9c.pt')
         model.export(format='onnx')
 
     @staticmethod
     def export_openvino():
+        """Export the YOLOv9 model to OpenVINO format."""
         model = YOLOv9('./app/weights/yolov9c.pt')
         model.export(format='openvino')
+
+class LightGlueRuntimeTest(YoloRuntimeTest):
+    def __init__(self):
+        """Initialize the LightGlueRuntimeTest class, inheriting from YoloRuntimeTest."""
+        super().__init__()

@@ -6,5 +6,7 @@ ultralytics
 jupyter
 opencv-python
 onnx
-onnxruntime
+# onnxruntime # CPU
+onnxruntime-gpu # CUDA
 openvino==2024.1.0
+kornia
