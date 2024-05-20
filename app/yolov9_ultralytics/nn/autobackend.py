@@ -452,12 +452,13 @@ class AutoBackend(nn.Module):
 
         # PyTorch
         if self.pt or self.nn_module:
-            timer = Timer()
-            timer.start()
+            im = torch.from_numpy(im)
+            # timer = Timer()
+            # timer.start()
             y = self.model(im, augment=augment, visualize=visualize, embed=embed)
-            timer.stop()
-            if (not warmup):
-                print(f'session run: {timer.elapsed_time}')
+            # timer.stop()
+            # if (not warmup):
+            #     print(f'session run: {timer.elapsed_time}')
 
         # TorchScript
         elif self.jit:
@@ -471,17 +472,21 @@ class AutoBackend(nn.Module):
 
         # ONNX Runtime
         elif self.onnx:
-            im = im.cpu().numpy()  # torch to numpy
-            timer = Timer()
-            timer.start()
+            # im = im.cpu().numpy()
+            print(im[0,0,0,0:10])
+            print(im.shape)
+            # torch to numpy
+            # timer = Timer()
+            # timer.start()
             y = self.session.run(self.output_names, {self.session.get_inputs()[0].name: im})
-            timer.stop()
-            if (not warmup):
-                print(f'session run: {timer.elapsed_time}')
+            print(f'Hello this is output na: {y}')
+            # timer.stop()
+            # if (not warmup):
+            #     print(f'session run: {timer.elapsed_time}')
 
         # OpenVINO
         elif self.xml:
-            im = im.cpu().numpy()  # FP32
+            # im = im.cpu().numpy()  # FP32
 
             if self.inference_mode in {"THROUGHPUT", "CUMULATIVE_THROUGHPUT"}:  # optimized for larger batch-sizes
                 n = im.shape[0]  # number of images in batch

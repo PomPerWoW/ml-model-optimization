@@ -15,7 +15,7 @@ import onnxruntime
 import numpy as np
 from typing import Tuple, List
 
-class YoloV9Onnxruntime:
+class YOLOv9Onnxruntime:
     def __init__(self,
                  model_path: str,
                  class_mapping_path: str,
@@ -56,14 +56,29 @@ class YoloV9Onnxruntime:
                 self.color_palette = np.random.uniform(0, 255, size=(len(self.classes), 3))
 
     def preprocess(self, img: np.ndarray) -> np.ndarray:
-        image_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        resized = cv2.resize(image_rgb, (self.input_width, self.input_height))
+        # Get the height and width of the input image
+        self.img_height, self.img_width = img.shape[:2]
 
-        # Scale input pixel value to 0 to 1
-        input_image = resized / 255.0
-        input_image = input_image.transpose(2,0,1)
-        input_tensor = input_image[np.newaxis, :, :, :].astype(np.float32)
-        return input_tensor
+        # Convert the image color space from BGR to RGB
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # Resize the image to match the input shape
+        img = cv2.resize(img, (self.input_width, self.input_height))
+
+        # Normalize the image data by dividing it by 255.0
+        image_data = np.array(img) / 255.0
+
+        # Transpose the image to have the channel dimension as the first dimension
+        image_data = np.transpose(image_data, (2, 0, 1))  # Channel first
+
+        # Expand the dimensions of the image data to match the expected input shape
+        image_data = np.expand_dims(image_data, axis=0).astype(np.float32)
+        for i in range(image_data.shape[0]):
+            print(image_data[i])
+        print(image_data.shape)
+        
+        print(image_data[0,0,0,0:10])
+        return image_data
     
     def xywh2xyxy(self, x):
         # Convert bounding box (x, y, w, h) to bounding box (x1, y1, x2, y2)
@@ -81,7 +96,6 @@ class YoloV9Onnxruntime:
         scores = scores[scores > self.conf_threshold]
         class_ids = np.argmax(predictions[:, 4:], axis=1)
 
-        # Rescale box
         boxes = predictions[:, :4]
         
         input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
@@ -105,49 +119,23 @@ class YoloV9Onnxruntime:
     def detect(self, img: np.ndarray) -> List:
         input_tensor = self.preprocess(img)
         outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})[0]
+        print(f'Hello this is output na: {outputs}')
         return self.postprocess(outputs)
     
     def draw_detections(self, img, detections: List):
-        """
-        Draws bounding boxes and labels on the input image based on the detected objects.
-
-        Args:
-            img: The input image to draw detections on.
-            detections: List of detection result which consists box, score, and class_ids
-            box: Detected bounding box.
-            score: Corresponding detection score.
-            class_id: Class ID for the detected object.
-
-        Returns:
-            None
-        """
-        
         for detection in detections:
-            # Extract the coordinates of the bounding box
             x1, y1, x2, y2 = detection['box'].astype(int)
             class_id = detection['class_index']
             confidence = detection['confidence']
-
-            # Retrieve the color for the class ID
             color = self.color_palette[class_id]
-
-            # Draw the bounding box on the image
             cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
-
-            # Create the label text with class name and score
             label = f"{self.classes[class_id]}: {confidence:.2f}"
-
-            # Calculate the dimensions of the label text
             (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
 
-            # Calculate the position of the label text
             label_x = x1
             label_y = y1 - 10 if y1 - 10 > label_height else y1 + 10
 
-            # Draw a filled rectangle as the background for the label text
             cv2.rectangle(
                 img, (label_x, label_y - label_height), (label_x + label_width, label_y + label_height), color, cv2.FILLED
             )
-
-            # Draw the label text on the image
             cv2.putText(img, label, (label_x, label_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)

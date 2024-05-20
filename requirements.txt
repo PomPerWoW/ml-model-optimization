@@ -10,3 +10,5 @@ onnx
 onnxruntime-gpu # CUDA
 openvino==2024.1.0
 kornia
+torch
+torchvision

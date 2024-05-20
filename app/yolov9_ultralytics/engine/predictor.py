@@ -120,18 +120,42 @@ class BasePredictor:
         Args:
             im (torch.Tensor | List(np.ndarray)): BCHW for tensor, [(HWC) x B] for list.
         """
-        not_tensor = not isinstance(im, torch.Tensor)
-        if not_tensor:
-            im = np.stack(self.pre_transform(im))
-            im = im[..., ::-1].transpose((0, 3, 1, 2))  # BGR to RGB, BHWC to BCHW, (n, 3, h, w)
-            im = np.ascontiguousarray(im)  # contiguous
-            im = torch.from_numpy(im)
+        # not_tensor = not isinstance(im, torch.Tensor)
+        # if not_tensor:
+            # im = np.stack(self.pre_transform(im))
+            # im = im[..., ::-1].transpose((0, 3, 1, 2))  # BGR to RGB, BHWC to BCHW, (n, 3, h, w)
+            # im = np.ascontiguousarray(im)  # contiguous
+            # im = torch.from_numpy(im)
 
-        im = im.to(self.device)
-        im = im.half() if self.model.fp16 else im.float()  # uint8 to fp16/32
-        if not_tensor:
-            im /= 255  # 0 - 255 to 0.0 - 1.0
-        return im
+        # im = im.to(self.device)
+        # im = im.half() if self.model.fp16 else im.float()  # uint8 to fp16/32
+        
+        # if not_tensor:
+            # im /= 255.0  # 0 - 255 to 0.0 - 1.0
+            
+            # for i in range(im.size(0)):
+            #     print(im[i])
+        
+        im = im[0]
+        
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+
+        # Resize the image to match the input shape
+        im = cv2.resize(im, (640, 640))
+
+        # Normalize the image data by dividing it by 255.0
+        image_data = np.array(im) / 255.0
+        
+        # Transpose the image to have the channel dimension as the first dimension
+        image_data = np.transpose(image_data, (2, 0, 1))  # Channel first
+
+        # Expand the dimensions of the image data to match the expected input shape
+        image_data = np.expand_dims(image_data, axis=0).astype(np.float32)
+        
+        for i in range(image_data.shape[0]):
+            print(image_data[i])
+        
+        return image_data
 
     def inference(self, im, *args, **kwargs):
         """Runs inference on a given image using the specified model and arguments."""

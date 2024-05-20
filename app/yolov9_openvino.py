@@ -9,24 +9,10 @@ import numpy as np
 import cv2
 import argparse
 import os
+import yaml
 
-coconame = [
-    "person",         "bicycle",    "car",           "motorcycle",    "airplane",     "bus",           "train",
-    "truck",          "boat",       "traffic light", "fire hydrant",  "stop sign",    "parking meter", "bench",
-    "bird",           "cat",        "dog",           "horse",         "sheep",        "cow",           "elephant",
-    "bear",           "zebra",      "giraffe",       "backpack",      "umbrella",     "handbag",       "tie",
-    "suitcase",       "frisbee",    "skis",          "snowboard",     "sports ball",  "kite",          "baseball bat",
-    "baseball glove", "skateboard", "surfboard",     "tennis racket", "bottle",       "wine glass",    "cup",
-    "fork",           "knife",      "spoon",         "bowl",          "banana",       "apple",         "sandwich",
-    "orange",         "broccoli",   "carrot",        "hot dog",       "pizza",        "donut",         "cake",
-    "chair",          "couch",      "potted plant",  "bed",           "dining table", "toilet",        "tv",
-    "laptop",         "mouse",      "remote",        "keyboard",      "cell phone",   "microwave",     "oven",
-    "toaster",        "sink",       "refrigerator",  "book",          "clock",        "vase",          "scissors",
-    "teddy bear",     "hair drier", "toothbrush" 
-]
-
-class YoloV9Openvino:
-    def __init__(self, xml_model_path="./model/yolov9-c-converted.xml", conf=0.2, nms=0.4):
+class YOLOv9Openvino:
+    def __init__(self, xml_model_path="./model/yolov9-c-converted.xml", classes="./weights/metadata.yaml", conf=0.6, nms=0.45):
         # Step 1. Initialize OpenVINO Runtime core
         core = ov.Core()
         # Step 2. Read a model
@@ -52,14 +38,29 @@ class YoloV9Openvino:
         self.conf_thresh = conf
         self.nms_thresh = nms
         self.colors = []
+        self.coconame = ""
 
         # Create random colors
         np.random.seed(42)  # Setting seed for reproducibility
+        
+        with open(classes, 'r') as file:
+            yaml_file = yaml.safe_load(file)
+            classes = yaml_file['names']
+            self.coconame = [classes[key] for key in sorted(classes.keys())]
 
-        for i in range(len(coconame)):
+        for i in range(len(self.coconame)):
             color = tuple(np.random.randint(100, 256, size=3))
             self.colors.append(color)
-
+            
+    def xywh2xyxy(self, x):
+        # Convert bounding box (x, y, w, h) to bounding box (x1, y1, x2, y2)
+        y = np.copy(x)
+        y[..., 0] = x[..., 0] - x[..., 2] / 2
+        y[..., 1] = x[..., 1] - x[..., 3] / 2
+        y[..., 2] = x[..., 0] + x[..., 2] / 2
+        y[..., 3] = x[..., 1] + x[..., 3] / 2
+        return y
+            
     def resize_and_pad(self, image):
         old_size = image.shape[:2] 
         ratio = float(self.input_width/max(old_size))   #fix to accept also rectangular images
@@ -99,9 +100,8 @@ class YoloV9Openvino:
                 confidences.append(classes_scores[class_id])
                 class_ids.append(class_id)
                 x, y, w, h = prediction[0].item(), prediction[1].item(), prediction[2].item(), prediction[3].item()
-                xmin = x - (w / 2)
-                ymin = y - (h / 2)
-                box = np.array([xmin, ymin, w, h])
+                box = np.array([x, y, w, h])
+                box = self.xywh2xyxy(box)
                 boxes.append(box)
 
         indexes = cv2.dnn.NMSBoxes(boxes, confidences, self.conf_thresh, self.nms_thresh)
@@ -135,7 +135,7 @@ class YoloV9Openvino:
             cv2.rectangle(img, (int(box[0]), int(box[1])), (int(xmax), int(ymax)), tuple(map(int, self.colors[classId])), 3)
 
             # Detection box text
-            class_string = coconame[classId] + ' ' + str(confidence)[:4]
+            class_string = self.coconame[classId] + ' ' + str(confidence)[:4]
             text_size, _ = cv2.getTextSize(class_string, cv2.FONT_HERSHEY_DUPLEX, 1, 2)
             text_rect = (box[0], box[1] - 40, text_size[0] + 10, text_size[1] + 20)
             cv2.rectangle(img, 
@@ -144,87 +144,28 @@ class YoloV9Openvino:
                 tuple(map(int, self.colors[classId])), cv2.FILLED)
             cv2.putText(img, class_string, (int(box[0] + 5), int(box[1] - 10)), cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 0), 2, cv2.LINE_AA)
 
-def make_parser():
-    parser = argparse.ArgumentParser("onnxruntime inference")
-    parser.add_argument(
-        "-m",
-        "--model",
-        type=str,
-        default="yolov9-c-converted.onnx",
-        help="Input your onnx model.",
-    )
-    parser.add_argument(
-        "-i",
-        "--data_path",
-        type=str,
-        default='videos/palace.mp4',
-        help="Path to your input image.",
-    )
-    parser.add_argument(
-        "-s",
-        "--score_thr",
-        type=float,
-        default=0.1,
-        help="Score threshould to filter the result.",
-    )
-    parser.add_argument(
-        "-n",
-        "--nms_thr",
-        type=float,
-        default=0.3,
-        help="NMS threshould.",
-    )
-    
-    return parser
-
 # Process a single image
-def process_image(model, image_path):
-    img = cv2.imread(image_path)
-    img_resized, dw, dh = model.resize_and_pad(img)
-    results = model.predict(img_resized)
-    model.draw(img, results, dw, dh)
-    cv2.imshow("result", img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-# Process a folder of images
-def process_folder(model, folder_path):
-    for filename in os.listdir(folder_path):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
-            image_path = os.path.join(folder_path, filename)
-            process_image(model, image_path)
+# def process_image(model, image_path):
+    # img = cv2.imread(image_path)
+    # img_resized, dw, dh = model.resize_and_pad(img)
+    # results = model.predict(img_resized)
+    # model.draw(img, results, dw, dh)
+    # cv2.imshow("result", img)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
 
 # Process a video
-def process_video(model, video_path):
-    cap = cv2.VideoCapture(video_path)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        img_resized, dw, dh = model.resize_and_pad(frame)
-        results = model.predict(img_resized)
-        model.draw(frame, results, dw, dh)
-        cv2.imshow("result", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-    cap.release()
-    cv2.destroyAllWindows()
-
-
-def main():
-    args = make_parser().parse_args()
-
-    # Initialize YOLOv9 model (assuming xml openvino model)
-    model = YoloV9Openvino(args.model)
-
-    if args.data_path.endswith('.jpg') or args.data_path.endswith('.png'):
-        process_image(model, args.data_path)
-    elif os.path.isdir(args.data_path):
-        process_folder(model, args.data_path)
-    elif args.data_path.endswith('.mp4'):  # Add support for other video formats
-        process_video(model, args.data_path)
-    else:
-        print("Error: Unsupported file format")    
-
-if __name__ == "__main__":
-    main()
+# def process_video(model, video_path):
+    # cap = cv2.VideoCapture(video_path)
+    # while cap.isOpened():
+    #     ret, frame = cap.read()
+    #     if not ret:
+    #         break
+    #     img_resized, dw, dh = model.resize_and_pad(frame)
+    #     results = model.predict(img_resized)
+        # model.draw(frame, results, dw, dh)
+    #     cv2.imshow("result", frame)
+    #     if cv2.waitKey(1) & 0xFF == ord('q'):
+    #         break
+    # cap.release()
+    # cv2.destroyAllWindows()
