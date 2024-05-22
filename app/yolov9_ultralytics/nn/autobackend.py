@@ -7,6 +7,7 @@ import platform
 import zipfile
 from collections import OrderedDict, namedtuple
 from pathlib import Path
+import pickle
 
 import cv2
 import numpy as np
@@ -456,6 +457,7 @@ class AutoBackend(nn.Module):
             # timer = Timer()
             # timer.start()
             y = self.model(im, augment=augment, visualize=visualize, embed=embed)
+            print(y)
             # timer.stop()
             # if (not warmup):
             #     print(f'session run: {timer.elapsed_time}')
@@ -473,13 +475,15 @@ class AutoBackend(nn.Module):
         # ONNX Runtime
         elif self.onnx:
             # im = im.cpu().numpy()
-            print(im[0,0,0,0:10])
-            print(im.shape)
+            # print(im[0,0,0,0:10])
+            # print(im.shape)
             # torch to numpy
             # timer = Timer()
             # timer.start()
             y = self.session.run(self.output_names, {self.session.get_inputs()[0].name: im})
-            print(f'Hello this is output na: {y}')
+            print(f'{y}')
+            with open('onnx_ultralytics_outputs.pkl', 'wb') as f:
+                pickle.dump(y, f)
             # timer.stop()
             # if (not warmup):
             #     print(f'session run: {timer.elapsed_time}')

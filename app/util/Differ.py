@@ -1,12 +1,22 @@
 import numpy as np
+from abc import ABC, abstractmethod
 
-class Differ:
+class Differ(ABC):
+    def __init__(self, v1, v2):
+        self.v1 = v1
+        self.v2 = v2
+    
+    @abstractmethod
+    def find_difference(self):
+        pass
+
+class ArrayDiffer(Differ):
     def __init__(self, r1_raw, r2_raw):
         if not isinstance(r1_raw, np.ndarray) or not isinstance(r2_raw, np.ndarray):
             raise TypeError("Inputs must be numpy arrays")
         
-        self.r1 = self._parse_raw_array(r1_raw)
-        self.r2 = self._parse_raw_array(r2_raw)
+        # Call the parent constructor
+        super().__init__(self._parse_raw_array(r1_raw), self._parse_raw_array(r2_raw))
 
     def _parse_raw_array(self, raw_array):
         parsed_objects = []
@@ -46,8 +56,8 @@ class Differ:
     def find_difference(self):
         differences = []
 
-        for obj1 in self.r1:
-            closest_match = self._find_closest_match(obj1, self.r2)
+        for obj1 in self.v1:
+            closest_match = self._find_closest_match(obj1, self.v2)
             if closest_match:
                 conf_diff = abs(obj1['confidence'] - closest_match['confidence'])
                 box_diff = np.abs(np.array(obj1['box']) - np.array(closest_match['box']))
@@ -55,3 +65,19 @@ class Differ:
                 differences.append([obj1['class'], f"{conf_diff:.4f}", list(box_diff)])
         
         return differences
+    
+class MatrixDiffer(Differ):
+    def __init__(self, matrix1, matrix2):
+        super().__init__(matrix1, matrix2)
+        print(self.v1)
+        self.matrix1 = np.array(self.v1)
+        self.matrix2 = np.array(self.v2)
+        
+    def find_difference(self):
+        if not isinstance(self.matrix1, np.ndarray) or not isinstance(self.matrix2, np.ndarray):
+            raise TypeError("Inputs must be numpy arrays")
+        
+        if self.matrix1.shape != self.matrix2.shape:
+            raise ValueError("Matrices must have the same shape")
+        
+        return self.matrix1 - self.matrix2

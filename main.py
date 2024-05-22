@@ -14,6 +14,9 @@ from app.LightGlueOnnx.export import export_onnx
 from app.LightGlueOnnx.infer import infer
 from threading import Thread
 
+class RuntimeTest:
+    pass
+
 class YoloRuntimeTest:
     def __init__(self):
         pass

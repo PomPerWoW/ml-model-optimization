@@ -152,9 +152,6 @@ class BasePredictor:
         # Expand the dimensions of the image data to match the expected input shape
         image_data = np.expand_dims(image_data, axis=0).astype(np.float32)
         
-        for i in range(image_data.shape[0]):
-            print(image_data[i])
-        
         return image_data
 
     def inference(self, im, *args, **kwargs):

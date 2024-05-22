@@ -12,6 +12,7 @@ import cv2
 import time
 import yaml
 import onnxruntime
+import pickle
 import numpy as np
 from typing import Tuple, List
 
@@ -73,11 +74,7 @@ class YOLOv9Onnxruntime:
 
         # Expand the dimensions of the image data to match the expected input shape
         image_data = np.expand_dims(image_data, axis=0).astype(np.float32)
-        for i in range(image_data.shape[0]):
-            print(image_data[i])
-        print(image_data.shape)
         
-        print(image_data[0,0,0,0:10])
         return image_data
     
     def xywh2xyxy(self, x):
@@ -118,9 +115,11 @@ class YOLOv9Onnxruntime:
         
     def detect(self, img: np.ndarray) -> List:
         input_tensor = self.preprocess(img)
-        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})[0]
-        print(f'Hello this is output na: {outputs}')
-        return self.postprocess(outputs)
+        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
+        print(outputs)
+        with open('onnx_model_outputs.pkl', 'wb') as f:
+            pickle.dump(outputs, f)
+        return self.postprocess(outputs[0])
     
     def draw_detections(self, img, detections: List):
         for detection in detections:
