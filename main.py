@@ -11,7 +11,8 @@ from app.LightGlue.lightglue import LightGlue, SuperPoint, DISK
 from app.LightGlue.lightglue.utils import load_image, rbd
 from app.LightGlueOnnx.infer import infer
 import onnx
-from onnxruntime.quantization import quantize_dynamic, QuantType
+from onnxruntime.quantization import quantize_static, quantize_dynamic, QuantType
+from onnxruntime.quantization.calibrate import CalibrationDataReader
 
 class RuntimeTest:
     pass
