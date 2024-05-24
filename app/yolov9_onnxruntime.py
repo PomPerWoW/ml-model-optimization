@@ -116,9 +116,9 @@ class YOLOv9Onnxruntime:
     def detect(self, img: np.ndarray) -> List:
         input_tensor = self.preprocess(img)
         outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
-        print(outputs)
+        print(outputs[0])
         with open('onnx_model_outputs.pkl', 'wb') as f:
-            pickle.dump(outputs, f)
+            pickle.dump(outputs[0], f)
         return self.postprocess(outputs[0])
     
     def draw_detections(self, img, detections: List):

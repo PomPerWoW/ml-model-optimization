@@ -12,7 +12,7 @@ import os
 import yaml
 
 class YOLOv9Openvino:
-    def __init__(self, xml_model_path="./model/yolov9-c-converted.xml", classes="./weights/metadata.yaml", conf=0.6, nms=0.45):
+    def __init__(self, xml_model_path="./model/yolov9-c-converted.xml", classes="./weights/metadata.yaml", conf=0.6, nms=0.6):
         # Step 1. Initialize OpenVINO Runtime core
         core = ov.Core()
         # Step 2. Read a model

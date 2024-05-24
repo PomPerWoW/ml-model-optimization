@@ -457,7 +457,9 @@ class AutoBackend(nn.Module):
             # timer = Timer()
             # timer.start()
             y = self.model(im, augment=augment, visualize=visualize, embed=embed)
-            print(y)
+            print(y[0])
+            with open('pytorch_ultralytics_outputs.pkl', 'wb') as f:
+                pickle.dump(y[0], f)
             # timer.stop()
             # if (not warmup):
             #     print(f'session run: {timer.elapsed_time}')
@@ -481,9 +483,9 @@ class AutoBackend(nn.Module):
             # timer = Timer()
             # timer.start()
             y = self.session.run(self.output_names, {self.session.get_inputs()[0].name: im})
-            print(f'{y}')
+            print(f'{y[0]}')
             with open('onnx_ultralytics_outputs.pkl', 'wb') as f:
-                pickle.dump(y, f)
+                pickle.dump(y[0], f)
             # timer.stop()
             # if (not warmup):
             #     print(f'session run: {timer.elapsed_time}')
@@ -511,6 +513,10 @@ class AutoBackend(nn.Module):
 
             else:  # inference_mode = "LATENCY", optimized for fastest first result at batch-size 1
                 y = list(self.ov_compiled_model(im).values())
+            
+            print(y[0])
+            with open('openvino_ultralytics_outputs.pkl', 'wb') as f:
+                pickle.dump(y[0], f)
 
         # TensorRT
         elif self.engine:

@@ -67,17 +67,17 @@ class ArrayDiffer(Differ):
         return differences
     
 class MatrixDiffer(Differ):
-    def __init__(self, matrix1, matrix2):
-        super().__init__(matrix1, matrix2)
-        print(self.v1)
-        self.matrix1 = np.array(self.v1)
-        self.matrix2 = np.array(self.v2)
-        
+    def __init__(self, matrix1, matrix2, threshold=1e-2):
+        self.matrix1 = matrix1
+        self.matrix2 = matrix2
+        self.threshold = threshold
+
     def find_difference(self):
-        if not isinstance(self.matrix1, np.ndarray) or not isinstance(self.matrix2, np.ndarray):
-            raise TypeError("Inputs must be numpy arrays")
+        matrix1_np = np.array(self.matrix1)
+        matrix2_np = np.array(self.matrix2)
         
-        if self.matrix1.shape != self.matrix2.shape:
-            raise ValueError("Matrices must have the same shape")
+        result_diff = matrix1_np - matrix2_np
         
-        return self.matrix1 - self.matrix2
+        result_diff[np.abs(result_diff) < self.threshold] = 0
+        
+        return result_diff

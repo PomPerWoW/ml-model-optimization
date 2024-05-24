@@ -9,10 +9,9 @@ from app.yolov9_openvino import YOLOv9Openvino
 from app.util.timer import Timer
 from app.LightGlue.lightglue import LightGlue, SuperPoint, DISK
 from app.LightGlue.lightglue.utils import load_image, rbd
-from app.LightGlue.lightglue import viz2d
-from app.LightGlueOnnx.export import export_onnx
 from app.LightGlueOnnx.infer import infer
-from threading import Thread
+import onnx
+from onnxruntime.quantization import quantize_dynamic, QuantType
 
 class RuntimeTest:
     pass
@@ -209,6 +208,13 @@ class YoloRuntimeTest:
         """Export the YOLOv9 model to ONNX format."""
         model = YOLOv9('./app/weights/yolov9c.pt')
         model.export(format='onnx')
+        
+    @staticmethod
+    def export_onnx_quantize():
+        """Export the YOLOv9 model to ONNX format."""
+        model_fp32 = './app/weights/yolov9c-preprocess.onnx'
+        model_quant = './app/weights/yolov9c-quantize.onnx'
+        quantized_model = quantize_dynamic(model_fp32, model_quant, weight_type=QuantType.QUInt8)
 
     @staticmethod
     def export_openvino():
